@@ -32,12 +32,21 @@ try {
     db = admin.firestore();
     auth = admin.auth();
     console.log('Firebase Admin SDK initialized successfully with serviceAccountKey.json');
-  } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PRIVATE_KEY.includes('PRIVATE KEY')) {
+  } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    let rawKey = process.env.FIREBASE_PRIVATE_KEY;
+    if (rawKey.startsWith('"') && rawKey.endsWith('"')) {
+      rawKey = rawKey.slice(1, -1);
+    }
+    if (rawKey.startsWith("'") && rawKey.endsWith("'")) {
+      rawKey = rawKey.slice(1, -1);
+    }
+    const formattedPrivateKey = rawKey.replace(/\\n/g, '\n').trim();
+
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+        privateKey: formattedPrivateKey
       })
     });
     db = admin.firestore();

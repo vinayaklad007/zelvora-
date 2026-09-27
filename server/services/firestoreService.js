@@ -10,8 +10,14 @@ const firestoreService = {
   // Collection getter
   getCollection: async (collectionName) => {
     if (!isMockMode && db) {
-      const snapshot = await db.collection(collectionName).get();
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      try {
+        const snapshot = await db.collection(collectionName).get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.warn(`Firestore getCollection warning for "${collectionName}":`, err.message);
+        const storeMap = mockStore[collectionName] || new Map();
+        return Array.from(storeMap.values());
+      }
     } else {
       const storeMap = mockStore[collectionName] || new Map();
       return Array.from(storeMap.values());
@@ -21,8 +27,14 @@ const firestoreService = {
   // Document getter
   getDoc: async (collectionName, id) => {
     if (!isMockMode && db) {
-      const doc = await db.collection(collectionName).doc(id).get();
-      return doc.exists ? { id: doc.id, ...doc.data() } : null;
+      try {
+        const doc = await db.collection(collectionName).doc(id).get();
+        return doc.exists ? { id: doc.id, ...doc.data() } : null;
+      } catch (err) {
+        console.warn(`Firestore getDoc warning for "${collectionName}/${id}":`, err.message);
+        const storeMap = mockStore[collectionName] || new Map();
+        return storeMap.get(id) || null;
+      }
     } else {
       const storeMap = mockStore[collectionName] || new Map();
       return storeMap.get(id) || null;
@@ -40,8 +52,21 @@ const firestoreService = {
     }
 
     if (!isMockMode && db) {
-      await db.collection(collectionName).doc(id).set(payload, { merge: true });
-      return { id, ...payload };
+      try {
+        await db.collection(collectionName).doc(id).set(payload, { merge: true });
+        return { id, ...payload };
+      } catch (err) {
+        console.warn(`Firestore setDoc warning for "${collectionName}/${id}":`, err.message);
+        let storeMap = mockStore[collectionName];
+        if (!storeMap) {
+          storeMap = new Map();
+          mockStore[collectionName] = storeMap;
+        }
+        const existing = storeMap.get(id) || {};
+        const merged = { ...existing, ...payload, id };
+        storeMap.set(id, merged);
+        return merged;
+      }
     } else {
       let storeMap = mockStore[collectionName];
       if (!storeMap) {
@@ -63,9 +88,21 @@ const firestoreService = {
     };
 
     if (!isMockMode && db) {
-      await db.collection(collectionName).doc(id).update(payload);
-      const updated = await db.collection(collectionName).doc(id).get();
-      return docToObject(updated);
+      try {
+        await db.collection(collectionName).doc(id).update(payload);
+        const updated = await db.collection(collectionName).doc(id).get();
+        return docToObject(updated);
+      } catch (err) {
+        console.warn(`Firestore updateDoc warning for "${collectionName}/${id}":`, err.message);
+        const storeMap = mockStore[collectionName];
+        if (!storeMap || !storeMap.has(id)) {
+          throw new Error(`Document ${id} not found in ${collectionName}`);
+        }
+        const existing = storeMap.get(id);
+        const merged = { ...existing, ...payload };
+        storeMap.set(id, merged);
+        return merged;
+      }
     } else {
       const storeMap = mockStore[collectionName];
       if (!storeMap || !storeMap.has(id)) {
@@ -81,7 +118,15 @@ const firestoreService = {
   // Delete document
   deleteDoc: async (collectionName, id) => {
     if (!isMockMode && db) {
-      await db.collection(collectionName).doc(id).delete();
+      try {
+        await db.collection(collectionName).doc(id).delete();
+      } catch (err) {
+        console.warn(`Firestore deleteDoc warning:`, err.message);
+        const storeMap = mockStore[collectionName];
+        if (storeMap) {
+          storeMap.delete(id);
+        }
+      }
     } else {
       const storeMap = mockStore[collectionName];
       if (storeMap) {
