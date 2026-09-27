@@ -8,7 +8,7 @@ import SEOHead from '../components/common/SEOHead';
 import { orderAPI } from '../services/api';
 
 const Account = () => {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, logout, loginWithGoogle, loginAdminDemo } = useAuth();
   const { wishlistItems } = useWishlist();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -45,12 +45,18 @@ const Account = () => {
         <h2 className="font-serif text-2xl font-bold text-gray-900">Sign In to Your Account</h2>
         <p className="text-xs text-gray-500">Access your order history, track shipments, and manage saved wishlist items.</p>
         <div className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-3 text-left">
-          <p className="text-xs text-gray-600">Click below for instant demo login or use Firebase Auth:</p>
+          <p className="text-xs text-gray-600 font-medium">Click below to sign in or use demo accounts:</p>
           <button
-            onClick={() => window.location.reload()}
-            className="w-full py-3 bg-primary-700 hover:bg-primary-600 text-white font-bold text-xs uppercase rounded-xl tracking-wider shadow-luxury"
+            onClick={loginWithGoogle}
+            className="w-full py-3 bg-primary-700 hover:bg-primary-600 text-white font-bold text-xs uppercase rounded-xl tracking-wider shadow-luxury flex items-center justify-center gap-2"
           >
             Sign In with Google / Email
+          </button>
+          <button
+            onClick={loginAdminDemo}
+            className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-roseGold font-bold text-xs uppercase rounded-xl tracking-wider flex items-center justify-center gap-2"
+          >
+            <ShieldCheck className="w-4 h-4 text-roseGold" /> Demo Admin Login
           </button>
         </div>
       </div>
