@@ -92,6 +92,22 @@ export const AuthProvider = ({ children }) => {
 
   // Google Login
   const loginWithGoogle = async () => {
+    // Check if running with dummy key before making network request
+    const currentApiKey = auth?.app?.options?.apiKey || '';
+    if (!import.meta.env.VITE_FIREBASE_API_KEY || currentApiKey.includes('DummyKey')) {
+      const demoUser = {
+        uid: 'demo_customer_001',
+        email: 'customer@zelvoraluxury.com',
+        displayName: 'Zelvora Customer',
+        role: 'customer'
+      };
+      localStorage.setItem('auth_token', 'mock-customer-token');
+      setUser(demoUser);
+      setIsAdmin(false);
+      toast.success('Logged in as Demo Customer');
+      return demoUser;
+    }
+
     try {
       const result = await signInWithPopup(auth, googleProvider);
       toast.success(`Welcome, ${result.user.displayName}!`);
@@ -99,7 +115,12 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.warn("Google Sign-In notice:", error.message);
       // Fallback to demo login if Firebase environment variables / API key are invalid or dummy
-      if (error.message?.includes('API key') || error.code === 'auth/invalid-api-key' || error.message?.includes('identitytoolkit')) {
+      if (
+        error.code === 'auth/api-key-not-valid' ||
+        error.code === 'auth/invalid-api-key' ||
+        error.message?.includes('API key') ||
+        error.message?.includes('identitytoolkit')
+      ) {
         const demoUser = {
           uid: 'demo_customer_001',
           email: 'customer@zelvoraluxury.com',
@@ -109,11 +130,11 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('auth_token', 'mock-customer-token');
         setUser(demoUser);
         setIsAdmin(false);
-        toast.success('Logged in as Demo Customer (Firebase Env Variables not set on Netlify)');
+        toast.success('Logged in as Demo Customer');
         return demoUser;
       }
       toast.error('Google Sign-In failed. Please check your Firebase configuration.');
-      throw error;
+      return null;
     }
   };
 
