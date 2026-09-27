@@ -92,48 +92,26 @@ export const AuthProvider = ({ children }) => {
 
   // Google Login
   const loginWithGoogle = async () => {
-    // Check if running with dummy key before making network request
-    const currentApiKey = auth?.app?.options?.apiKey || '';
-    if (!import.meta.env.VITE_FIREBASE_API_KEY || currentApiKey.includes('DummyKey')) {
-      const demoUser = {
-        uid: 'demo_customer_001',
-        email: 'customer@zelvoraluxury.com',
-        displayName: 'Zelvora Customer',
-        role: 'customer'
-      };
-      localStorage.setItem('auth_token', 'mock-customer-token');
-      setUser(demoUser);
-      setIsAdmin(false);
-      toast.success('Logged in as Demo Customer');
-      return demoUser;
-    }
-
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      toast.success(`Welcome, ${result.user.displayName}!`);
+      toast.success(`Welcome, ${result.user.displayName || result.user.email}!`);
       return result.user;
     } catch (error) {
       console.warn("Google Sign-In notice:", error.message);
-      // Fallback to demo login if Firebase environment variables / API key are invalid or dummy
+      if (error.code === 'auth/popup-closed-by-user') {
+        toast.error('Sign-in cancelled.');
+        return null;
+      }
       if (
         error.code === 'auth/api-key-not-valid' ||
         error.code === 'auth/invalid-api-key' ||
         error.message?.includes('API key') ||
         error.message?.includes('identitytoolkit')
       ) {
-        const demoUser = {
-          uid: 'demo_customer_001',
-          email: 'customer@zelvoraluxury.com',
-          displayName: 'Zelvora Customer',
-          role: 'customer'
-        };
-        localStorage.setItem('auth_token', 'mock-customer-token');
-        setUser(demoUser);
-        setIsAdmin(false);
-        toast.success('Logged in as Demo Customer');
-        return demoUser;
+        toast.error('Firebase Web API Key not set on Netlify. Please set VITE_FIREBASE_API_KEY in Netlify settings.');
+        return null;
       }
-      toast.error('Google Sign-In failed. Please check your Firebase configuration.');
+      toast.error(error.message || 'Google Sign-In failed.');
       return null;
     }
   };
