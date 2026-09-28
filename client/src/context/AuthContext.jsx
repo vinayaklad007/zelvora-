@@ -71,11 +71,13 @@ export const AuthProvider = ({ children }) => {
       return result.user;
     } catch (error) {
       console.error("Login error:", error.code, error.message);
-      let msg = 'Failed to sign in. Please check your credentials.';
+      let msg = error.message || 'Failed to sign in. Please check your credentials.';
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        msg = 'Invalid email or password. Please try again.';
+        msg = 'Invalid email or password. If you do not have an account, click Register.';
       } else if (error.code === 'auth/invalid-email') {
         msg = 'Please enter a valid email address.';
+      } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/admin-restricted-operation') {
+        msg = 'Email/Password sign-in is disabled in Firebase Console. Enable Email/Password under Authentication > Sign-in method.';
       } else if (error.code === 'auth/too-many-requests') {
         msg = 'Too many failed attempts. Please reset your password or try again later.';
       }
@@ -103,18 +105,26 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(result.user, { displayName: name });
+      if (result.user && name) {
+        try {
+          await updateProfile(result.user, { displayName: name });
+        } catch (pErr) {
+          console.warn("Update profile notice:", pErr);
+        }
+      }
       toast.success('Account created successfully!');
       return result.user;
     } catch (error) {
       console.error("Register error:", error.code, error.message);
-      let msg = 'Failed to create account.';
+      let msg = error.message || 'Failed to create account.';
       if (error.code === 'auth/email-already-in-use') {
-        msg = 'An account with this email already exists. Please sign in instead.';
+        msg = 'An account with this email already exists. Please click Sign In to log in.';
       } else if (error.code === 'auth/weak-password') {
         msg = 'Password should be at least 6 characters long.';
       } else if (error.code === 'auth/invalid-email') {
         msg = 'Please enter a valid email address.';
+      } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/admin-restricted-operation') {
+        msg = 'Email/Password sign-in is disabled in Firebase Console. Enable Email/Password under Authentication > Sign-in method.';
       }
       toast.error(msg);
       throw error;
