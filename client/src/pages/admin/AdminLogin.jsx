@@ -6,30 +6,26 @@ import SEOHead from '../../components/common/SEOHead';
 import toast from 'react-hot-toast';
 
 const AdminLogin = () => {
-  const [email, setEmail] = useState('admin@zelvoraluxury.com');
-  const [password, setPassword] = useState('zelvora@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, loginAdminDemo } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      if (email.toLowerCase().includes('admin')) {
-        try {
-          await login(email, password);
-        } catch (authErr) {
-          // Fallback to admin authentication in sandbox dev environment
-          loginAdminDemo();
-        }
+      const loggedUser = await login(email, password);
+      if (loggedUser && (loggedUser.email?.toLowerCase().includes('admin') || loggedUser.role === 'admin')) {
+        toast.success('Admin authentication verified');
         navigate('/admin');
       } else {
-        toast.error('Access Denied: This portal is restricted to Store Administrators.');
+        toast.error('Access Denied: Administrator permissions required.');
       }
     } catch (err) {
-      toast.error('Admin authentication failed.');
+      // Toast already shown in AuthContext
     } finally {
       setIsSubmitting(false);
     }

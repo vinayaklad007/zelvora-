@@ -14,43 +14,22 @@ const verifyToken = async (req, res, next) => {
 
   try {
     if (!isMockMode && auth) {
-      try {
-        const decodedToken = await auth.verifyIdToken(token);
-        req.user = decodedToken;
-        
-        // Fetch user profile from firestore to attach role
-        const userDoc = await firestoreService.getDoc('users', decodedToken.uid);
-        if (userDoc) {
-          req.user.role = userDoc.role || 'customer';
-          req.user.phone = userDoc.phone || decodedToken.phone_number;
-          req.user.name = userDoc.name || decodedToken.name;
-        }
-        if (decodedToken.email?.toLowerCase().includes('admin')) {
-          req.user.role = 'admin';
-        }
-        return next();
-      } catch (authError) {
-        // Fallback for admin tokens in sandbox mode
-        if (token.includes('admin') || token === 'mock-admin-token' || token.length > 0) {
-          req.user = {
-            uid: 'admin_user_001',
-            email: 'admin@zelvoraluxury.com',
-            name: 'Admin User',
-            role: 'admin'
-          };
-          return next();
-        }
-        throw authError;
+      const decodedToken = await auth.verifyIdToken(token);
+      req.user = decodedToken;
+      
+      // Fetch user profile from firestore to attach role
+      const userDoc = await firestoreService.getDoc('users', decodedToken.uid);
+      if (userDoc) {
+        req.user.role = userDoc.role || 'customer';
+        req.user.phone = userDoc.phone || decodedToken.phone_number;
+        req.user.name = userDoc.name || decodedToken.name;
       }
-    } else {
-      // Mock mode token verification
-      req.user = {
-        uid: 'admin_user_001',
-        email: 'admin@zelvoraluxury.com',
-        name: 'Admin User',
-        role: 'admin'
-      };
+      if (decodedToken.email?.toLowerCase().includes('admin')) {
+        req.user.role = 'admin';
+      }
       return next();
+    } else {
+      return res.status(401).json({ success: false, message: 'Unauthorized: Production authentication required' });
     }
   } catch (error) {
     console.error('Auth Verification Error:', error.message);

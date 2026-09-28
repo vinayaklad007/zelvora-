@@ -127,16 +127,6 @@ const Navbar = () => {
                       >
                         My Account & Orders
                       </Link>
-                      {isAdmin && (
-                        <Link
-                          to="/admin"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="block px-4 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-50 flex items-center gap-1.5"
-                        >
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          Admin Dashboard
-                        </Link>
-                      )}
                       <button
                         onClick={() => {
                           setUserDropdownOpen(false);
@@ -204,15 +194,6 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            {isAdmin && (
-              <Link
-                to="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-sm font-bold text-primary-700 py-1.5 flex items-center gap-2"
-              >
-                <ShieldCheck className="w-4 h-4" /> Admin Panel
-              </Link>
-            )}
           </nav>
         </div>
       )}

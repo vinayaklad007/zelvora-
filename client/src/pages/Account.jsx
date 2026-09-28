@@ -8,7 +8,7 @@ import SEOHead from '../components/common/SEOHead';
 import { orderAPI } from '../services/api';
 
 const Account = () => {
-  const { user, isAdmin, logout, login, register, loginWithGoogle, googleLoading, loginAdminDemo } = useAuth();
+  const { user, isAdmin, logout, login, register, loginWithGoogle, googleLoading } = useAuth();
   const { wishlistItems } = useWishlist();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -189,15 +189,6 @@ const Account = () => {
               )}
             </button>
           </form>
-
-          <div className="border-t border-gray-100 pt-4">
-            <button
-              onClick={loginAdminDemo}
-              className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 border border-gray-200 transition-all cursor-pointer"
-            >
-              <ShieldCheck className="w-4 h-4 text-roseGold" /> Demo Admin Login
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -232,12 +223,7 @@ const Account = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {isAdmin && (
-            <Link to="/admin" className="bg-primary-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl uppercase flex items-center gap-1.5 shadow-sm">
-              <ShieldCheck className="w-4 h-4 text-roseGold" /> Admin Portal
-            </Link>
-          )}
-          <button onClick={logout} className="bg-gray-100 hover:bg-rose-50 hover:text-rose-600 text-gray-700 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5">
+          <button onClick={logout} className="bg-gray-100 hover:bg-rose-50 hover:text-rose-600 text-gray-700 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
             <LogOut className="w-4 h-4" /> Logout
           </button>
         </div>
