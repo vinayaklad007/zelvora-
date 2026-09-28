@@ -87,6 +87,36 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Register Email/Password
+  const register = async (name, email, password) => {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      if (result.user && name) {
+        try {
+          await updateProfile(result.user, { displayName: name });
+        } catch (pErr) {
+          console.warn("Update profile notice:", pErr);
+        }
+      }
+      toast.success('Account created successfully!');
+      return result.user;
+    } catch (error) {
+      console.error("Register error:", error.code, error.message);
+      let msg = error.message || 'Failed to create account.';
+      if (error.code === 'auth/email-already-in-use') {
+        msg = 'An account with this email already exists. Please click Sign In to log in.';
+      } else if (error.code === 'auth/weak-password') {
+        msg = 'Password should be at least 6 characters long.';
+      } else if (error.code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/admin-restricted-operation') {
+        msg = 'Email/Password sign-in is disabled in Firebase Console. Enable Email/Password under Authentication > Sign-in method.';
+      }
+      toast.error(msg);
+      throw error;
+    }
+  };
+
   // Password Reset Email
   const resetPassword = async (resetEmail) => {
     if (!resetEmail || !resetEmail.includes('@')) {
@@ -106,6 +136,44 @@ export const AuthProvider = ({ children }) => {
       }
       toast.error(msg);
       throw error;
+    }
+  };
+
+  // Google Login
+  const loginWithGoogle = async () => {
+    if (googleLoading) return null;
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      toast.success(`Welcome, ${result.user.displayName || result.user.email}!`);
+      return result.user;
+    } catch (error) {
+      console.warn("Google Sign-In notice:", error.code, error.message);
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        toast.error('Sign-in popup was closed or interrupted. Please try again.');
+        return null;
+      }
+      if (error.code === 'auth/popup-blocked') {
+        toast.error('Pop-up was blocked by your browser. Please allow popups for this site and try again.');
+        return null;
+      }
+      if (error.code === 'auth/unauthorized-domain') {
+        toast.error('Domain not authorized in Firebase Auth. Add zelvoraa.netlify.app to Firebase Console > Authentication > Settings > Authorized domains.');
+        return null;
+      }
+      if (
+        error.code === 'auth/api-key-not-valid' ||
+        error.code === 'auth/invalid-api-key' ||
+        error.message?.includes('API key') ||
+        error.message?.includes('identitytoolkit')
+      ) {
+        toast.error('Firebase Web API Key issue. Please check VITE_FIREBASE_API_KEY setting.');
+        return null;
+      }
+      toast.error(error.message || 'Google Sign-In failed.');
+      return null;
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
