@@ -9,8 +9,9 @@ const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
-  const { login } = useAuth();
+  const { login, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -29,6 +30,26 @@ const AdminLogin = () => {
       // Toast already shown in AuthContext
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error('Please enter your admin email address.');
+      return;
+    }
+    const ADMIN_EMAILS = ['vinaylad401@gmail.com'];
+    if (!ADMIN_EMAILS.includes(email.trim().toLowerCase())) {
+      toast.error('Access Denied: Only authorized administrator email can request password reset.');
+      return;
+    }
+    setIsSendingReset(true);
+    try {
+      await resetPassword(email.trim());
+    } catch (err) {
+      // Toast already shown in AuthContext
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -62,7 +83,17 @@ const AdminLogin = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-gray-700 mb-1">Password *</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block font-semibold text-gray-700">Password *</label>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={isSendingReset}
+                className="text-xs text-roseGold font-semibold hover:underline focus:outline-none cursor-pointer"
+              >
+                {isSendingReset ? 'Sending Reset Email...' : 'Forgot Password?'}
+              </button>
+            </div>
             <div className="relative">
               <input
                 type="password"
