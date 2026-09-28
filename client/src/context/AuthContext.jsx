@@ -16,36 +16,49 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        try {
-          const token = await currentUser.getIdToken();
-          localStorage.setItem('auth_token', token);
-          
-          // Check role claim or admin email pattern
-          const isUserAdmin = currentUser.email?.toLowerCase().includes('admin') || false;
-          setIsAdmin(isUserAdmin);
+    const unsubscribe = onAuthStateChanged(
+      auth, 
+      async (currentUser) => {
+        if (currentUser) {
+          try {
+            const token = await currentUser.getIdToken();
+            localStorage.setItem('auth_token', token);
+            
+            // Check role claim or admin email pattern
+            const isUserAdmin = currentUser.email?.toLowerCase().includes('admin') || false;
+            setIsAdmin(isUserAdmin);
 
-          setUser({
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Valued Customer',
-            photoURL: currentUser.photoURL,
-            role: isUserAdmin ? 'admin' : 'customer'
-          });
-        } catch (err) {
-          console.error("Token fetch error:", err);
+            setUser({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Valued Customer',
+              photoURL: currentUser.photoURL,
+              role: isUserAdmin ? 'admin' : 'customer'
+            });
+          } catch (err) {
+            console.warn("Stale token refresh cleared:", err.message);
+            localStorage.removeItem('auth_token');
+            setUser(null);
+            setIsAdmin(false);
+          }
+        } else {
+          localStorage.removeItem('auth_token');
           setUser(null);
+          setIsAdmin(false);
         }
-      } else {
+        setLoading(false);
+      },
+      (error) => {
+        console.warn("Firebase Auth observer notice:", error.message);
         localStorage.removeItem('auth_token');
         setUser(null);
         setIsAdmin(false);
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    );
 
     return () => unsubscribe();
   }, []);
@@ -57,7 +70,16 @@ export const AuthProvider = ({ children }) => {
       toast.success(`Welcome back, ${result.user.displayName || 'Customer'}!`);
       return result.user;
     } catch (error) {
-      toast.error(error.message || 'Failed to sign in. Please check your credentials.');
+      console.error("Login error:", error.code, error.message);
+      let msg = 'Failed to sign in. Please check your credentials.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        msg = 'Invalid email or password. Please try again.';
+      } else if (error.code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (error.code === 'auth/too-many-requests') {
+        msg = 'Too many failed attempts. Please reset your password or try again later.';
+      }
+      toast.error(msg);
       throw error;
     }
   };
@@ -85,21 +107,40 @@ export const AuthProvider = ({ children }) => {
       toast.success('Account created successfully!');
       return result.user;
     } catch (error) {
-      toast.error(error.message || 'Failed to create account.');
+      console.error("Register error:", error.code, error.message);
+      let msg = 'Failed to create account.';
+      if (error.code === 'auth/email-already-in-use') {
+        msg = 'An account with this email already exists. Please sign in instead.';
+      } else if (error.code === 'auth/weak-password') {
+        msg = 'Password should be at least 6 characters long.';
+      } else if (error.code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      }
+      toast.error(msg);
       throw error;
     }
   };
 
   // Google Login
   const loginWithGoogle = async () => {
+    if (googleLoading) return null;
+    setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       toast.success(`Welcome, ${result.user.displayName || result.user.email}!`);
       return result.user;
     } catch (error) {
-      console.warn("Google Sign-In notice:", error.message);
-      if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Sign-in cancelled.');
+      console.warn("Google Sign-In notice:", error.code, error.message);
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        toast.error('Sign-in popup was closed or interrupted. Please try again.');
+        return null;
+      }
+      if (error.code === 'auth/popup-blocked') {
+        toast.error('Pop-up was blocked by your browser. Please allow popups for this site and try again.');
+        return null;
+      }
+      if (error.code === 'auth/unauthorized-domain') {
+        toast.error('Domain not authorized in Firebase Auth. Add zelvoraa.netlify.app to Firebase Console > Authentication > Settings > Authorized domains.');
         return null;
       }
       if (
@@ -108,11 +149,13 @@ export const AuthProvider = ({ children }) => {
         error.message?.includes('API key') ||
         error.message?.includes('identitytoolkit')
       ) {
-        toast.error('Firebase Web API Key not set on Netlify. Please set VITE_FIREBASE_API_KEY in Netlify settings.');
+        toast.error('Firebase Web API Key issue. Please check VITE_FIREBASE_API_KEY setting.');
         return null;
       }
       toast.error(error.message || 'Google Sign-In failed.');
       return null;
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -134,6 +177,7 @@ export const AuthProvider = ({ children }) => {
       user,
       loading,
       isAdmin,
+      googleLoading,
       login,
       register,
       loginWithGoogle,
