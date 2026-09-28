@@ -1,4 +1,5 @@
 const firestoreService = require('../services/firestoreService');
+const { auth, isMockMode } = require('../config/firebase-admin');
 
 const adminController = {
   // GET /api/admin/dashboard-stats
@@ -6,7 +7,31 @@ const adminController = {
     try {
       const orders = await firestoreService.getCollection('orders');
       const products = await firestoreService.getCollection('products');
-      const users = await firestoreService.getCollection('users');
+      let users = await firestoreService.getCollection('users');
+
+      // Sync with real Firebase Auth users
+      if (!isMockMode && auth) {
+        try {
+          const listUsersResult = await auth.listUsers(1000);
+          const authUsers = listUsersResult.users.map(u => ({
+            id: u.uid,
+            name: u.displayName || u.email?.split('@')[0] || 'Customer',
+            email: u.email,
+            phone: u.phoneNumber || '',
+            role: u.email?.toLowerCase().includes('admin') ? 'admin' : 'customer',
+            disabled: u.disabled || false,
+            createdAt: u.metadata?.creationTime || new Date().toISOString(),
+            lastSignIn: u.metadata?.lastSignInTime || ''
+          }));
+
+          const userMap = new Map();
+          authUsers.forEach(u => userMap.set(u.id, u));
+          users.forEach(u => userMap.set(u.id, { ...userMap.get(u.id), ...u }));
+          users = Array.from(userMap.values());
+        } catch (authErr) {
+          console.warn("auth.listUsers warning:", authErr.message);
+        }
+      }
 
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
@@ -80,7 +105,7 @@ const adminController = {
             pendingOrders,
             deliveredOrders,
             cancelledOrders,
-            totalCustomers: users.length || 24, // default mock user count baseline
+            totalCustomers: users.length,
             lowStockCount: lowStockProducts.length,
             totalProducts: products.length
           },
@@ -97,7 +122,31 @@ const adminController = {
   // GET /api/admin/customers
   getCustomersAdmin: async (req, res, next) => {
     try {
-      const users = await firestoreService.getCollection('users');
+      let users = await firestoreService.getCollection('users');
+
+      if (!isMockMode && auth) {
+        try {
+          const listUsersResult = await auth.listUsers(1000);
+          const authUsers = listUsersResult.users.map(u => ({
+            id: u.uid,
+            name: u.displayName || u.email?.split('@')[0] || 'Customer',
+            email: u.email,
+            phone: u.phoneNumber || '',
+            role: u.email?.toLowerCase().includes('admin') ? 'admin' : 'customer',
+            disabled: u.disabled || false,
+            createdAt: u.metadata?.creationTime || new Date().toISOString(),
+            lastSignIn: u.metadata?.lastSignInTime || ''
+          }));
+
+          const userMap = new Map();
+          authUsers.forEach(u => userMap.set(u.id, u));
+          users.forEach(u => userMap.set(u.id, { ...userMap.get(u.id), ...u }));
+          users = Array.from(userMap.values());
+        } catch (authErr) {
+          console.warn("auth.listUsers error in getCustomersAdmin:", authErr.message);
+        }
+      }
+
       return res.json({ success: true, data: users });
     } catch (error) {
       next(error);

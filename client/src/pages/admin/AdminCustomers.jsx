@@ -58,27 +58,41 @@ const AdminCustomers = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {customers.map((c) => (
-                <tr key={c.id || c.uid}>
-                  <td className="p-4 font-bold text-gray-900">{c.name || c.displayName || 'Customer'}</td>
-                  <td className="p-4 text-gray-600">{c.email}</td>
-                  <td className="p-4 text-gray-600">{c.phone || '+91 98765 43210'}</td>
-                  <td className="p-4 font-mono font-bold uppercase">{c.role || 'customer'}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${c.disabled ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                      {c.disabled ? 'Disabled' : 'Active'}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <button
-                      onClick={() => handleToggleStatus(c.id || c.uid)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${c.disabled ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}
-                    >
-                      {c.disabled ? <><UserCheck className="w-3.5 h-3.5" /> Enable</> : <><UserX className="w-3.5 h-3.5" /> Disable</>}
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-gray-500 font-medium">
+                    Loading registered customer accounts...
                   </td>
                 </tr>
-              ))}
+              ) : customers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-gray-500 font-medium">
+                    No registered customers found.
+                  </td>
+                </tr>
+              ) : (
+                customers.map((c) => (
+                  <tr key={c.id || c.uid}>
+                    <td className="p-4 font-bold text-gray-900">{c.name || c.displayName || 'Customer'}</td>
+                    <td className="p-4 text-gray-600">{c.email}</td>
+                    <td className="p-4 text-gray-600">{c.phone || 'N/A'}</td>
+                    <td className="p-4 font-mono font-bold uppercase">{c.role || 'customer'}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${c.disabled ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                        {c.disabled ? 'Disabled' : 'Active'}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <button
+                        onClick={() => handleToggleStatus(c.id || c.uid)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${c.disabled ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}
+                      >
+                        {c.disabled ? <><UserCheck className="w-3.5 h-3.5" /> Enable</> : <><UserX className="w-3.5 h-3.5" /> Disable</>}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
