@@ -8,7 +8,7 @@ import SEOHead from '../components/common/SEOHead';
 import { orderAPI } from '../services/api';
 
 const Account = () => {
-  const { user, isAdmin, logout, login, register, loginWithGoogle, googleLoading } = useAuth();
+  const { user, isAdmin, logout, login, register, resetPassword, loginWithGoogle, googleLoading } = useAuth();
   const { wishlistItems } = useWishlist();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -23,6 +23,7 @@ const Account = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -55,6 +56,21 @@ const Account = () => {
       // Error handled in AuthContext toast
     } finally {
       setIsSubmittingAuth(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email || !email.includes('@')) {
+      toast.error('Please enter your registered email address first.');
+      return;
+    }
+    setIsSendingReset(true);
+    try {
+      await resetPassword(email);
+    } catch (err) {
+      // Error handled in AuthContext toast
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -157,7 +173,19 @@ const Account = () => {
             </div>
 
             <div>
-              <label className="block font-semibold text-gray-700 mb-1">Password *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-semibold text-gray-700">Password *</label>
+                {authMode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={isSendingReset}
+                    className="text-[11px] font-semibold text-primary-700 hover:text-primary-800 hover:underline cursor-pointer disabled:opacity-50"
+                  >
+                    {isSendingReset ? 'Sending reset link...' : 'Forgot Password?'}
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type="password"

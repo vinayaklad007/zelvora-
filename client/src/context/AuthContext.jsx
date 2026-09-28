@@ -5,7 +5,8 @@ import {
   createUserWithEmailAndPassword, 
   signInWithPopup, 
   signOut,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, googleProvider } from '../services/firebase';
 import toast from 'react-hot-toast';
@@ -86,6 +87,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Password Reset Email
+  const resetPassword = async (resetEmail) => {
+    if (!resetEmail || !resetEmail.includes('@')) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      toast.success('Password reset email sent! Check your inbox.');
+    } catch (error) {
+      console.error("Password reset error:", error.code, error.message);
+      let msg = 'Failed to send password reset email.';
+      if (error.code === 'auth/user-not-found') {
+        msg = 'No account found with this email address.';
+      } else if (error.code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      }
+      toast.error(msg);
+      throw error;
+    }
+  };
+
   // Logout
   const logout = async () => {
     try {
@@ -107,6 +130,7 @@ export const AuthProvider = ({ children }) => {
       googleLoading,
       login,
       register,
+      resetPassword,
       loginWithGoogle,
       logout
     }}>
