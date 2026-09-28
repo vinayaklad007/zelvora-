@@ -28,8 +28,9 @@ export const AuthProvider = ({ children }) => {
             const token = await currentUser.getIdToken();
             localStorage.setItem('auth_token', token);
             
-            // Check role claim or admin email pattern
-            const isUserAdmin = currentUser.email?.toLowerCase().includes('admin') || false;
+            // Explicit Admin Email Whitelist
+            const ADMIN_EMAILS = ['vinaylad401@gmail.com'];
+            const isUserAdmin = ADMIN_EMAILS.includes(currentUser.email?.toLowerCase());
             setIsAdmin(isUserAdmin);
 
             setUser({

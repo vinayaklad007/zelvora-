@@ -1,6 +1,8 @@
 const { auth, isMockMode, db } = require('../config/firebase-admin');
 const firestoreService = require('../services/firestoreService');
 
+const ADMIN_EMAILS = ['vinaylad401@gmail.com'];
+
 /**
  * Middleware to verify Authentication ID Token
  */
@@ -24,7 +26,7 @@ const verifyToken = async (req, res, next) => {
         req.user.phone = userDoc.phone || decodedToken.phone_number;
         req.user.name = userDoc.name || decodedToken.name;
       }
-      if (decodedToken.email?.toLowerCase().includes('admin')) {
+      if (ADMIN_EMAILS.includes(decodedToken.email?.toLowerCase())) {
         req.user.role = 'admin';
       }
       return next();
@@ -45,10 +47,11 @@ const verifyAdmin = (req, res, next) => {
     return res.status(401).json({ success: false, message: 'Unauthorized: Authentication required' });
   }
 
-  const isAdmin = req.user.role === 'admin' || req.user.admin === true || req.user.email?.toLowerCase().includes('admin');
+  const userEmail = req.user.email?.toLowerCase();
+  const isAdmin = ADMIN_EMAILS.includes(userEmail) || req.user.role === 'admin';
   
   if (!isAdmin) {
-    return res.status(403).json({ success: false, message: 'Forbidden: Admin access required' });
+    return res.status(403).json({ success: false, message: 'Forbidden: Admin access restricted to authorized email' });
   }
 
   next();

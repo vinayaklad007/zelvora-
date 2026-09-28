@@ -17,8 +17,9 @@ const AdminLogin = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const ADMIN_EMAILS = ['vinaylad401@gmail.com'];
       const loggedUser = await login(email, password);
-      if (loggedUser && (loggedUser.email?.toLowerCase().includes('admin') || loggedUser.role === 'admin')) {
+      if (loggedUser && ADMIN_EMAILS.includes(loggedUser.email?.toLowerCase())) {
         toast.success('Admin authentication verified');
         navigate('/admin');
       } else {

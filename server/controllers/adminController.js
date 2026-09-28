@@ -12,13 +12,13 @@ const adminController = {
       // Sync with real Firebase Auth users
       if (!isMockMode && auth) {
         try {
-          const listUsersResult = await auth.listUsers(1000);
+          const ADMIN_EMAILS = ['vinaylad401@gmail.com'];
           const authUsers = listUsersResult.users.map(u => ({
             id: u.uid,
             name: u.displayName || u.email?.split('@')[0] || 'Customer',
             email: u.email,
             phone: u.phoneNumber || '',
-            role: u.email?.toLowerCase().includes('admin') ? 'admin' : 'customer',
+            role: ADMIN_EMAILS.includes(u.email?.toLowerCase()) ? 'admin' : 'customer',
             disabled: u.disabled || false,
             createdAt: u.metadata?.creationTime || new Date().toISOString(),
             lastSignIn: u.metadata?.lastSignInTime || ''
@@ -126,13 +126,14 @@ const adminController = {
 
       if (!isMockMode && auth) {
         try {
+          const ADMIN_EMAILS = ['vinaylad401@gmail.com'];
           const listUsersResult = await auth.listUsers(1000);
           const authUsers = listUsersResult.users.map(u => ({
             id: u.uid,
             name: u.displayName || u.email?.split('@')[0] || 'Customer',
             email: u.email,
             phone: u.phoneNumber || '',
-            role: u.email?.toLowerCase().includes('admin') ? 'admin' : 'customer',
+            role: ADMIN_EMAILS.includes(u.email?.toLowerCase()) ? 'admin' : 'customer',
             disabled: u.disabled || false,
             createdAt: u.metadata?.creationTime || new Date().toISOString(),
             lastSignIn: u.metadata?.lastSignInTime || ''

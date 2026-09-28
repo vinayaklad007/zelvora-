@@ -34,8 +34,8 @@ const orderController = {
       }
 
       // Check ownership or admin
-      const isOwner = req.user && (req.user.uid === order.userId || req.user.email === order.customerInfo?.email);
-      const isAdmin = req.user && (req.user.role === 'admin' || req.user.email?.includes('admin'));
+      const ADMIN_EMAILS = ['vinaylad401@gmail.com'];
+      const isAdmin = req.user && (req.user.role === 'admin' || ADMIN_EMAILS.includes(req.user.email?.toLowerCase()));
 
       if (!isOwner && !isAdmin) {
         return res.status(403).json({ success: false, message: 'Access denied to this order' });
